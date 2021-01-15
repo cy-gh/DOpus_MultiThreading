@@ -36,22 +36,38 @@ There are many application areas apart from just hashing. There are many excelle
 I did a very quick, rough benchmark; 4 files of total 15 GB on an AMD 3900x comparing single-thread vs multi-thread, where ST runtime is measured using "CalcSHA256" as a DOpus column.
 
 RamDisk:
-ST: ~57.8s
-MT: ~22.3s
-ST (2nd run right after MT): ~57.9s
+
+- ST: ≈57.8s
+- MT: ≈22.3s
+- ST (2nd run right after MT): ≈57.9s
 
 NVME:
-ST: ~63.2s
-MT: ~22.4s
-ST (2nd run right after MT): ~58.1s
 
-So MT greatly increases hashing speed as long as you use a  non-spinning drive. If I had used more files, it probably would have helped even more; the CPU reached 18% max and quickly dropped as soon as some files were finished.
+- ST: ≈63.2s
+- MT: ≈22.4s
+- ST (2nd run right after MT): ≈58.1s
 
-The number 18% is quite reasonable, on a 24 HT-core machine, the estimated CPU usage per core would be 100/24 =~ 4.2% if each core would process 1 file exclusively, and since I used 4 files, 18% sounds ok.
+So MT greatly increases hashing speed as long as you use a  non-spinning drive. If I had used more files, it probably would have helped even more; the CPU reached ≈18% max and quickly dropped as soon as some files were finished.
 
-Also note the difference between approx. 60s in ST mode vs 22s in MT mode. The expected MT runtime is not as simple as dividing 60/4 = 15s and asking if it is the MT overhead. The difference comes not only from MT overhead but also depends on the longest running tasks, because the MT manager must wait at the very least for the longest running task (the biggest file to hash in this case) even if it were running for 1 file. To demonstrate this, I copied a file 8 times with different names, a total 17.6GB, then the runtime drops from 22.3s to 9.4s for a larger total size.
+The number 18% seems quite reasonable to me, on a 24 HT-core machine, the estimated CPU usage per core would be 100/24 ≈ 4.2% if each core would process 1 file exclusively, and since I used 4 files, 18% sounds ok.
 
-==> Multi-threading helps immensely, regardless of the MT overhead. 
+Also note the difference between ≈60s in ST mode vs ≈22s in MT mode. The expected MT runtime is not as simple as dividing 60/4 = 15s and asking if the difference is the MT overhead. The diff comes not only from MT overhead but also depends on the longest running tasks, because the MT manager must wait at the very least for the longest running task (the biggest 5.7 GB file to hash in this case) even if it were running for 1 file.
+
+To verify this, I copied a single file 24 times with sequential names, a total 31GB:
+
+RamDisk:
+
+- MT: ≈9.5s(!) - Peak CPU: 86.9%.
+- ST: ≈125s(!) - Peak CPU: 5%s
+
+NVME:
+
+- MT: ≈20s - Peak CPU: 29.3%
+- ST: not measured
+
+Basically no file requires longer than the other. Note how the MT runtime immensely drops from 22.3s to 9.5s on RamDisk and to 20s on NVME despite twice the total size of initial benchmark. Also note the CPU usage differences between the two: On a RamDisk, disk speed is not the bottleneck and all cores are equally utilized almost to the max, but even on a very fast NVME, the CPU stops being the bottleneck and the disk read speed starts holding the CPU back.
+
+==> Multi-threading helps immensely, regardless of the MT overhead or disk speed, as long as it not a classical HDD.
 
 ## Screenshots
 
