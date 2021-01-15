@@ -8,15 +8,23 @@ This is only a proof of concept, so take it as it is.
 To test this, create a new button as such:
 
 **@nodeselect**
+
 **// MultiThreadManagerStart MAXCOUNT=24 MAXWAIT=60000 COMMAND "CalcSHA256"**
+
 **// default MAXCOUNT is the number of logical processors, i.e. hyperthreaded ones**
+
 **// default MAXWAIT is 1 hour in milliseconds**
+
 **MultiThreadManagerStart COMMAND="CalcSHA256"**
 
 Basically the command which needs to be run in parallel, "CalcSHA256" in this case, must at least have a parameter called
-    **RESVAR (e.g. cmd.template='RESVAR/K, ...')**
+
+​	**RESVAR (e.g. cmd.template='RESVAR/K, ...')**
+
 and must set it before returning, e.g.
-    **Script.vars.Set(resvar) = any_JS_value_object_etc;**
+
+​    **Script.vars.Set(resvar) = any_JS_value_object_etc;**
+
 and the Thread Manager and Thread Workers will take care of the rest.
 
 The reason why RESVAR is necessary is that there is no possibility for Script Commands to directly return a value with standard JS, i.e. 'return myval;' ...that doesn't work.
