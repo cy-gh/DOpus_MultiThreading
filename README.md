@@ -31,7 +31,27 @@ Now you know.
 
 There are many application areas apart from just hashing. There are many excellent CLI tools which process files but are single-threaded, e.g. various .PNG optimizers, ffmpeg, wget... These can be easily converted to multi-threaded workers now. Or you could write your own server pinger, web page fetchers and run it in parallel. If **it** can be run, now **it** can be run in parallel.
 
+## Benchmarks
 
+I did a very quick, rough benchmark; 4 files of total 15 GB on an AMD 3900x comparing single-thread vs multi-thread, where ST runtime is measured using "CalcSHA256" as a DOpus column.
+
+RamDisk:
+ST: ~57.8s
+MT: ~22.3s
+ST (2nd run right after MT): ~57.9s
+
+NVME:
+ST: ~63.2s
+MT: ~22.4s
+ST (2nd run right after MT): ~58.1s
+
+So MT greatly increases hashing speed as long as you use a  non-spinning drive. If I had used more files, it probably would have helped even more; the CPU reached 18% max and quickly dropped as soon as some files were finished.
+
+The number 18% is quite reasonable, on a 24 HT-core machine, the estimated CPU usage per core would be 100/24 =~ 4.2% if each core would process 1 file exclusively, and since I used 4 files, 18% sounds ok.
+
+Also note the difference between approx. 60s in ST mode vs 22s in MT mode. The expected MT runtime is not as simple as dividing 60/4 = 15s and asking if it is the MT overhead. The difference comes not only from MT overhead but also depends on the longest running tasks, because the MT manager must wait at the very least for the longest running task (the biggest file to hash in this case) even if it were running for 1 file. To demonstrate this, I copied a file 8 times with different names, a total 17.6GB, then the runtime drops from 22.3s to 9.4s for a larger total size.
+
+==> Multi-threading helps immensely, regardless of the MT overhead. 
 
 ## Screenshots
 
