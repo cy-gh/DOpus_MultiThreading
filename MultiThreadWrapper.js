@@ -33,7 +33,7 @@ util.shell		= new ActiveXObject('WScript.shell');
 // Called by Directory Opus to initialize the script
 function OnInit(initData)
 {
-	initData.name			= 'MultiThread Test';
+	initData.name			= 'MultiThread Prototype';
 	initData.version		= '1.0';
 	initData.copyright		= '(c) 2021 cuneytyilmaz.com';
 	initData.desc			= '';
@@ -103,9 +103,11 @@ function OnMultiThreadManagerStart(scriptCmdData) {
     progress_bar.pause = true;
     progress_bar.abort = true;
     progress_bar.Init(scriptCmdData.func.sourcetab, 'Please wait');		// window title
-    progress_bar.SetStatus('Running threads');							// header
+	progress_bar.SetStatus('Running threads');							// header
 	progress_bar.Show();
 	progress_bar.SetFiles(scriptCmdData.func.sourcetab.selected_files.count);
+	// progress_bar.HideFileByteCounts(false);
+	// progress_bar.SetBytesProgress(DOpus.FSUtil.NewFileSize());
 	progress_bar.Restart();
 
 
@@ -120,6 +122,7 @@ function OnMultiThreadManagerStart(scriptCmdData) {
 	// process selected files
 	var prefix = util.dopusrt + cmd;
 	var current_count = 0;
+	var totalcnt = 0;
 	var selected_files_cnt = scriptCmdData.func.sourcetab.selstats.selfiles;
 	fileloop: for (var eSelected = new Enumerator(scriptCmdData.func.sourcetab.selected), cnt = 1; !eSelected.atEnd(); eSelected.moveNext(), cnt++) {
 		var selitem		= eSelected.item();
@@ -128,19 +131,19 @@ function OnMultiThreadManagerStart(scriptCmdData) {
 		var prefix		= util.dopusrt + ' MultiThreadWorker THREADID="'+threadID+'" MAXWAIT='+maxwait+' CMD="'+cmd+'"';
 		var torun		= prefix + ' FILE="' + selitem.realpath + '"';
 
-		DOpus.Output('*************** MANAGER: ' + prefix + ', file: ' + selitem.name);
+		// DOpus.Output('*************** MANAGER: ' + prefix + ', file: ' + selitem.name);
 		current_count++;
-		DOpus.Output('*************** Running #: ' + current_count);
-		DOpus.Output('');
-		DOpus.Output('');
+		// DOpus.Output('*************** Running #: ' + current_count);
+		// DOpus.Output('');
+		// DOpus.Output('');
 		while(current_count > maxcount && ++itercnt < itermax) {
 			DOpus.Delay(500);
-			DOpus.Output('\ttoo many threads, waiting...: ' + current_count + ' (iter:'+itercnt+')');
+			DOpus.Output('\ttoo many threads, waiting...: ' + current_count + ' (iter:'+itercnt+'), started so far: ' + totalcnt);
 			var current_count = 0;
 			for (var eTP = new Enumerator(tp); !eTP.atEnd(); eTP.moveNext()) {
 				var thread = eTP.item();
 				if (!tp(thread)('finished')) {
-					DOpus.Output('Unfinished file: ' + tp(thread)('file'));
+					// DOpus.Output('Unfinished file: ' + tp(thread)('file'));
 					current_count++;
 				}
 			}
@@ -159,6 +162,12 @@ function OnMultiThreadManagerStart(scriptCmdData) {
 		util.sv.Set('TP') = tp;
 
 		progress_bar.StepFiles(1);
+		// progress_bar.StepBytes(selitem.size);
+		DOpus.Output('selitem.size: ' + selitem.size);
+
+
+
+
 		progress_bar.SetTitle(cnt + '/' + selected_files_cnt);
 		progress_bar.SetName(selitem.name);
 		progress_bar.SetType('file');
@@ -172,6 +181,7 @@ function OnMultiThreadManagerStart(scriptCmdData) {
 
 		DOpus.Output('*************** Starting new thread after availability... ' + selitem.name + '\n\n');
 		util.cmd.RunCommand(torun);
+		totalcnt++;
 		// uncomment this block only to test overall CPU load and ensure that it's approaching 100%
 		// the results are irrelevant
 		// calculate multiple hashes just to keep the CPU busy for a while
@@ -190,8 +200,8 @@ function OnMultiThreadManagerStart(scriptCmdData) {
 			util.cmdGlobal.RunCommand(torun);
 		*/
 
-		DOpus.Output('');
-		DOpus.Output('');
+		// DOpus.Output('');
+		// DOpus.Output('');
 	} // end fileloop
 
 	// wait for unfinished files
@@ -204,7 +214,7 @@ function OnMultiThreadManagerStart(scriptCmdData) {
 		for (var eTP = new Enumerator(tp); !eTP.atEnd(); eTP.moveNext()) {
 			var thread = eTP.item();
 			if (!tp(thread)('finished')) {
-				DOpus.Output('...waiting for unfinished file: ' + tp(thread)('file'));
+				// DOpus.Output('...waiting for unfinished file: ' + tp(thread)('file'));
 				all_finished = false;
 			}
 			switch (progress_bar.GetAbortState()) {
@@ -230,19 +240,20 @@ function OnMultiThreadManagerStart(scriptCmdData) {
 	// Unfortunately any thread still running after this point will be unreachable
 	//
 	// Summary
-	DOpus.Output('');
-	DOpus.Output('');
-	DOpus.Output('');
-	DOpus.Output('*****************  SUMMARY');
-	DOpus.Output('');
-	DOpus.Output('');
-	DOpus.Output('');
-	for (var eTP = new Enumerator(tp); !eTP.atEnd(); eTP.moveNext()) {
-		var thread = eTP.item();
-		var rv = tp(thread)('resvar') + '';
-		var result = util.sv.Get(rv);
-		DOpus.Output('file: ' + tp(thread)('file') + ', resvar: ' + rv + ', finished: ' + tp(thread)('finished') + ', result: ' + result);
-	}
+	// DOpus.Output('');
+	// DOpus.Output('');
+	// DOpus.Output('');
+	// DOpus.Output('*****************  SUMMARY');
+	// DOpus.Output('');
+	// DOpus.Output('');
+	// DOpus.Output('');
+	// for (var eTP = new Enumerator(tp); !eTP.atEnd(); eTP.moveNext()) {
+	// 	var thread = eTP.item();
+	// 	var rv = tp(thread)('resvar') + '';
+	// 	var result = util.sv.Get(rv);
+	// 	DOpus.Output('file: ' + tp(thread)('file') + ', resvar: ' + rv + ', finished: ' + tp(thread)('finished') + ', result: ' + result);
+	// }
+	DOpus.Output('Finished ' + totalcnt + ' files @' + getTS() + ', in ' + (getTS() - ts) + ' ms');
 }
 
 
@@ -251,7 +262,7 @@ function OnMultiThreadWorker(scriptCmdData) {
 	var threadID	= scriptCmdData.func.args.THREADID;
 	var maxwait		= scriptCmdData.func.args.MAXWAIT;
 	var file		= scriptCmdData.func.args.FILE;
-	DOpus.Output('\tWorker - threadID: ' + threadID + ', maxwait: ' + maxwait + ', cmd: ' + cmd + ', file: ' + file);
+	// DOpus.Output('\tWorker - threadID: ' + threadID + ', maxwait: ' + maxwait + ', cmd: ' + cmd + ', file: ' + file);
 
 	var resvar = getResVar(threadID);
 	var torun = cmd + ' RESVAR=' + resvar +' FILE="' + file + '"';
@@ -266,7 +277,7 @@ function OnMultiThreadWorker(scriptCmdData) {
 	util.sv.Set(resvar) = util.sv.Get(resvar) || false;	// put the result back to memory
 	util.sv.Get('TP')(threadID)('finished') = true;		// mark the thread as finished
 
-	DOpus.Output('\tWorker - threadID: ' + threadID + ', elapsed: ' + Math.round((getTS()-ts)/1000) + 's, result: ' + util.sv.Get(resvar) + '\t\t' + util.sv.Get('TP')(threadID)('finished'));
+	// DOpus.Output('\tWorker - threadID: ' + threadID + ', elapsed: ' + Math.round((getTS()-ts)/1000) + 's, result: ' + util.sv.Get(resvar) + '\t\t' + util.sv.Get('TP')(threadID)('finished'));
 }
 
 
@@ -279,14 +290,14 @@ function OnCalcSHA256(scriptCmdData) {
 
 	var item	= DOpus.FSUtil.GetItem(scriptCmdData.func.args.FILE);
 	var hash	= false;
-	DOpus.Output('\t\tOnCalcSHA256: ' + item.name + ', started @' + getTS());
+	// DOpus.Output('\t\tOnCalcSHA256: ' + item.name + ', started @' + getTS());
 	try {
 		if (item.is_dir) return;
 		hash = DOpus.FSUtil().Hash(item, 'sha256');
 	} catch (e) {
 		DOpus.Output('Error: ' + e.toString());
 	}
-	DOpus.Output('\t\tOnCalcSHA256: ' + item.name + ', finished @' + getTS());
+	// DOpus.Output('\t\tOnCalcSHA256: ' + item.name + ', finished @' + getTS());
 
 	util.sv.Set(resvar) = hash;
 	// return hash; // this wouldn't work as you expected
